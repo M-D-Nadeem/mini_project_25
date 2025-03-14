@@ -65,7 +65,7 @@ const App = () => {
   }, [formData]);
 
   const handleNext = () => {
-    if (!formData.employeeCode || !formData.name || !formData.designation || !formData.joiningDate || !formData.periodOfAssessment) {
+    if (!formData.employeeCode ) {
       alert("Please fill all required fields before proceeding.");
       return;
     }
