@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import axiosInstance from '../helper/axiosInstance';
+import { useNavigate } from 'react-router-dom';
 
 const Page7 = ({formData,setFormData,onPrevious}) => {
+  const navigate=useNavigate()
   const handleInputChange = (e) => {
     const {name, value } = e.target;
 
@@ -18,21 +20,80 @@ const Page7 = ({formData,setFormData,onPrevious}) => {
   };
   console.log(formData);
 
-  const handleSubmit=async ()=>{
+  const handleSubmit = async () => {
     const confirmSubmit = window.confirm("This action will submit the form data. Do you want to proceed?");
     if (!confirmSubmit) return;
-  
+    
+    const evaluationData = new FormData();
+    
+
+    for (const [key, value] of Object.entries(formData)) {
+      if (value === null || value === undefined) continue;
+      
+      if (key === 'categoriesTotal' && typeof value === 'object') {
+        evaluationData.append(key, JSON.stringify(value));
+      }
+      else if (key.endsWith('Image') && typeof value === 'string' && value.startsWith('data:')) {
+        try {
+          const [dataInfo, base64Data] = value.split(',');
+          const mimeType = dataInfo.match(/data:(.*?);/)[1];
+          
+          const extension = mimeType.split('/')[1];
+          const fileName = `${key}.${extension}`;
+          
+          const byteCharacters = atob(base64Data);
+          const byteArrays = [];
+          
+          for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+            const byteNumbers = new Array(slice.length);
+            
+            for (let i = 0; i < slice.length; i++) {
+              byteNumbers[i] = slice.charCodeAt(i);
+            }
+            
+            byteArrays.push(new Uint8Array(byteNumbers));
+          }
+          
+          const blob = new Blob(byteArrays, { type: mimeType });
+          const file = new File([blob], fileName, { type: mimeType });
+          
+          evaluationData.append(key, file);
+        } catch (error) {
+          console.error(`Error processing ${key}:`, error);
+          evaluationData.append(key, value);
+        }
+      }
+      else {
+        evaluationData.append(key, value);
+      }
+    }
+    console.log(evaluationData);
+    
     try {
-      const response=await axiosInstance.post("/addData", formData);
+      const response = await axiosInstance.post("/addData", evaluationData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
       console.log(response);
-      if (response?.data?.success ) {
+      if (response?.data?.success) {
         alert("Form submitted successfully!");
+        localStorage.removeItem("token");
+        localStorage.removeItem("authState");
+        localStorage.clear();
+        
+        delete axiosInstance.defaults.headers.common["Authorization"];
+        navigate("/tankyouPage")
+      } else {
+        alert("Form submission failed. Please try again.");
       }
     } catch (error) {
       alert("An error occurred while submitting the form. Please try again.");
       console.error("Submission error:", error);
     }
-  }
+  };
   
   return (
     <div className="container mx-auto p-6  min-h-screen">
@@ -107,7 +168,6 @@ const Page7 = ({formData,setFormData,onPrevious}) => {
           className="w-full p-2 mt-2 border border-gray-300 rounded-md"
         />
       </div>
-      {/* Navigation Buttons */}
       <div className="flex justify-between mt-6">
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"

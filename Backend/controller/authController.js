@@ -1,20 +1,22 @@
 import User from '../model/user.js';
 import jwt from 'jsonwebtoken';
+import Evaluation from "../model/data.js"
+
 
 // Constants for expiration (6 hours)
-const EXPIRATION_HOURS = 6 ;
+const EXPIRATION_HOURS = 6 ; //for 10sec= 10/3600
 const EXPIRATION_MS = EXPIRATION_HOURS * 60 * 60 * 1000; // 6 hours in milliseconds
 
 // Generate JWT Token with 6 hour expiration
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+const generateToken = (id,role) => {
+  return jwt.sign({ id,role }, process.env.JWT_SECRET, {
     expiresIn: `${EXPIRATION_HOURS}h` // 6 hours
   });
 };
 
 // Set token cookie with 6 hour expiration
-const sendTokenResponse = (user, statusCode, res) => {
-  const token = generateToken(user._id);
+const sendTokenResponse =async (user, statusCode, res) => {
+  const token = generateToken(user._id , user.role);
 
   const options = {
     expires: new Date(Date.now() + EXPIRATION_MS),
@@ -25,6 +27,9 @@ const sendTokenResponse = (user, statusCode, res) => {
   if (process.env.NODE_ENV === 'production') {
     options.secure = true;
   }
+
+  
+  
 
   res
     .status(statusCode)
@@ -37,7 +42,7 @@ const sendTokenResponse = (user, statusCode, res) => {
         id: user._id,
         email: user.email,
         role: user.role
-      }
+      },
     });
 };
 export const signup = async (req, res) => {

@@ -2,7 +2,7 @@
 const calculateCategorySum = (data, category) => {
   const roles = ["Self", "HoD", "External"];
   const sums = {};
-
+  
   roles.forEach((role) => {
     const key = `${category}${role}`;
     sums[key] = Object.keys(data)

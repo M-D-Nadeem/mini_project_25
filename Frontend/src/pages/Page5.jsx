@@ -1,6 +1,9 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 
-const Page5 = ({formData, setFormData, onNext, onPrevious }) => {
+const Page5 = ({formData, setFormData, onNext, onPrevious,isReadOnly,userRole }) => {
+        const [previewImages, setPreviewImages] = useState({});
+    
     const handleInputChange = (e, key) => {
         const { value } = e.target;
     
@@ -15,8 +18,141 @@ const Page5 = ({formData, setFormData, onNext, onPrevious }) => {
           return updatedData;
         });
       };
+      const handleImageUpload = (e, key) => {
+        const file = e.target.files[0];
+        const MAX_FILE_SIZE = 100 * 1024; // 100KB
+    
+      
+        if (file) {
+          if (file.size > MAX_FILE_SIZE) {
+            toast.error("File size exceeds 100KB. Please upload a smaller image.");
+            return;
+          }
+      
+          const reader = new FileReader();
+      
+          reader.onloadend = () => {
+            const imageUrl = reader.result;
+      
+            setPreviewImages(prev => ({
+              ...prev,
+              [key]: imageUrl
+            }));
+      
+            setFormData(prev => {
+              const updatedData = {
+                ...prev,
+                [`${key}Image`]: imageUrl
+              };
+      
+              localStorage.setItem("formData", JSON.stringify(updatedData));
+              return updatedData;
+            });
+          };
+      
+          reader.readAsDataURL(file);
+        }
+      };
+    
+      const showImagePreview = (key) => {
+        const fileUrl = formData[`${key}Image`];
+        if (!fileUrl) {
+          alert("No file uploaded for this field");
+          return;
+        }
+        if(fileUrl.startsWith('data:')){
+        
+        
+        // Create a blob from the data URL
+        const byteString = atob(fileUrl.split(',')[1]);
+        const mimeString = fileUrl.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([ab], { type: mimeString });
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // Open in new tab using the blob URL
+        const newWindow = window.open();
+        if (newWindow) {
+          newWindow.document.write(`
+            <html>
+              <head>
+                <title>File Preview</title>
+                <style>
+                  body {
+                    margin: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    background-color: #f0f0f0;
+                  }
+                  img, embed, iframe {
+                    max-width: 100%;
+                    max-height: 90vh;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                  }
+                  .container {
+                    text-align: center;
+                    padding: 20px;
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+          `);
+          
+          // Different handling based on file type
+          if (mimeString.startsWith('image/')) {
+            newWindow.document.write(`<img src="${blobUrl}" alt="Preview" />`);
+          } else if (mimeString === 'application/pdf') {
+            newWindow.document.write(`<embed src="${blobUrl}" type="application/pdf" width="800px" height="600px" />`);
+          } else if (mimeString.includes('word') || mimeString.includes('excel') || mimeString.includes('powerpoint')) {
+            // For office documents
+            newWindow.document.write(`
+              <div>
+                <h3>Office document preview</h3>
+                <p>This type of document cannot be previewed directly in the browser.</p>
+                <a href="${blobUrl}" download="document">Download File</a>
+              </div>
+            `);
+          } else {
+            // Generic file handling
+            newWindow.document.write(`
+              <div>
+                <h3>File preview</h3>
+                <p>This type of file (${mimeString}) may not display correctly in the browser.</p>
+                <a href="${blobUrl}" download="file">Download File</a>
+              </div>
+            `);
+          }
+          
+          newWindow.document.write(`
+                </div>
+              </body>
+            </html>
+          `);
+          newWindow.document.close();
+        } else {
+          alert("Pop-up blocked. Please allow pop-ups for this site to view the file.");
+        }
+      }else{
+        if (!fileUrl) {
+          console.error("No file uploaded for this field");
+          return;
+      }
+    
+      window.open(fileUrl, "_blank");
+      }
+        
+      };
+    
       console.log(formData);
-
     return (
         <div className="p-6  min-h-screen">
             <h3 id="head_pdrc" className="text-xl font-bold text-center"> 3. Contribution at Department Level (CDL)</h3>
@@ -67,21 +203,51 @@ const Page5 = ({formData, setFormData, onNext, onPrevious }) => {
                             <td className="border p-2 ">{row.id}</td>
                             <td className="border p-2">{row.description}</td>
                             <td className="border p-2">
+                            <div className="flex flex-col items-center space-y-2">
+
                                 <input
                                     type="number"
                                     min="0"
                                     max="10"
                                     value={formData[`CDL${row.no}Self`] || ""}
+                                    readOnly={isReadOnly}
+
                 onChange={(e) => handleInputChange(e, `CDL${row.no}Self`)}
                                     className="w-full p-2 border"
                                 />
+                                {userRole === "faculty" ? (
+                    <div className="flex flex-col items-center mt-2 w-full">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                        onChange={(e) => handleImageUpload(e, `CDL${row.no}Self`)}
+                        className="text-xs w-full"
+                      />
+                        <button
+                        onClick={() => showImagePreview(`CDL${row.no}Self`)}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                      >
+                        View Evidence
+                      </button>
+                    </div>
+                  
+                  ):<><button
+                  onClick={() => showImagePreview("TLP111Self")}
+                  className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                >
+                  View Evidence
+                </button></>}
+                                </div>
                             </td>
                             <td className="border p-2">
                                 <input
                                     type="number"
                                     min="0"
                                     max="10"
-                                    value={formData[`CDL${row.no}HoD`] || ""}
+                                    readOnly={userRole==="faculty"}
+                                    value={userRole === "external" ? "" :formData[`CDL${row.no}HoD`] || ""}
+                                    disabled={userRole === "external"}
+
                 onChange={(e) => handleInputChange(e, `CDL${row.no}HoD`)}
                                     className="w-full p-2 border"
                                 />
@@ -91,7 +257,9 @@ const Page5 = ({formData, setFormData, onNext, onPrevious }) => {
                                     type="number"
                                     min="0"
                                     max="10"
-                                    value={formData[`CDL${row.no}External`] || ""}
+                                    value={userRole === "hod" ? "" :formData[`CDL${row.no}External`] || ""}
+                                    disabled={userRole === "hod"}
+                                    readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, `CDL${row.no}External`)}
                                     className="w-full p-2 border"
                                 />
@@ -120,21 +288,49 @@ const Page5 = ({formData, setFormData, onNext, onPrevious }) => {
                             <div className="text-red-600">Internship support through hackman – 1, Placement support through Catalysis and Hackman – 1</div>
                         </td>
                         <td className="border p-2">
+                        <div className="flex flex-col items-center space-y-2">
                             <input
                                 type="number"
                                 min="0"
                                 max="10"
                                 value={formData[`CIL4Self`] || ""}
+                                readOnly={isReadOnly}
+
                 onChange={(e) => handleInputChange(e, `CIL4Self`)}
                                 className="w-full p-2 border"
                             />
+                            {userRole === "faculty" ? (
+                    <div className="flex flex-col items-center mt-2 w-full">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                        onChange={(e) => handleImageUpload(e, "CIL4Self")}
+                        className="text-xs w-full"
+                      />
+                        <button
+                        onClick={() => showImagePreview("CIL4Self")}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                      >
+                        View Evidence
+                      </button>
+                    </div>
+                  
+                  ):<><button
+                  onClick={() => showImagePreview("TLP111Self")}
+                  className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                >
+                  View Evidence
+                </button></>}
+                            </div>
                         </td>
                         <td className="border p-2">
                             <input
                                 type="number"
                                 min="0"
                                 max="10"
-                                value={formData[`CIL4HoD`] || ""}
+                                value={userRole === "external" ? "" :formData[`CIL4HoD`] || ""}
+                                disabled={userRole === "external"}
+                                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, `CIL4HoD`)}
                                 className="w-full p-2 border"
                             />
@@ -144,7 +340,9 @@ const Page5 = ({formData, setFormData, onNext, onPrevious }) => {
                                 type="number"
                                 min="0"
                                 max="10"
-                                value={formData[`CIL4External`] || ""}
+                                value={userRole === "hod" ? "" :formData[`CIL4External`] || ""}
+                                disabled={userRole === "hod"}
+                                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, `CIL4External`)}
                                 className="w-full p-2 border"
                             />

@@ -5,22 +5,29 @@ import { motion } from "framer-motion";
 import { Lock, AtSign, Key } from "lucide-react";
 import { toast } from "react-hot-toast";
 import axiosInstance from "../helper/axiosInstance";
+import { useDispatch } from "react-redux";
+import { logout, setEmpCode, setToken } from "../redux/authSlice";
+import logo from "../dscelogo.png";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const dispatch=useDispatch()
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
-    role: "editor"
+    role: "faculty"
   });
 
   // Check if user is already logged in
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (token) {
+      dispatch(setToken(token))
+
       navigate("/page");
     }
   }, [navigate]);
@@ -65,6 +72,8 @@ const Auth = () => {
     localStorage.setItem("token", data.token);
     axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
     
+    dispatch(setToken(data.token))
+    // dispatch(setEmpCode(data.employeeCodes))
     // Set auto logout after token expires
     setTimeout(() => {
       handleLogout();
@@ -80,7 +89,7 @@ const Auth = () => {
         
         localStorage.removeItem("token");
         localStorage.clear();
-  
+        dispatch(logout())
         delete axiosInstance.defaults.headers.common["Authorization"];
         navigate("/");
         toast.success("Logged out successfully");
@@ -100,7 +109,9 @@ const Auth = () => {
           {/* Header */}
           <div className="px-8 py-6 bg-gradient-to-r from-blue-500 to-indigo-600">
             <div className="text-center">
-            <Lock className="h-12 w-12 text-white mx-auto mb-4" />              <h1 className="text-3xl font-bold text-white">
+            {/* <Lock className="h-12 w-12 text-white mx-auto mb-4" /> */}
+            <img src={logo} className="h-16 w-full text-white mx-auto mb-4" alt="dsce" />
+                          <h1 className="text-3xl font-bold text-white">
                 {isSignUp ? "Create Account" : "Welcome Back"}
               </h1>
               <p className="text-blue-100 mt-2">
@@ -180,9 +191,11 @@ const Auth = () => {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="editor">Editor</option>
-                      <option value="admin">Admin</option>
+                      <option value="faculty">Faculty</option>
                       <option value="hod">HOD</option>
+                      <option value="external">External evaluator</option>
+                      <option value="admin">Admin</option>
+
                     </select>
                   </div>
                 </>

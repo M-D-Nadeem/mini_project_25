@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import toast from "react-hot-toast";
 
-const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
+const Page4 = ({formData, setFormData, onNext, onPrevious,isReadOnly,userRole }) => {
+    const [previewImages, setPreviewImages] = useState({});
+  
   const handleInputChange = (e, key) => {
     const { value } = e.target;
 
@@ -15,8 +18,141 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
       return updatedData;
     });
   };
+  const handleImageUpload = (e, key) => {
+    const file = e.target.files[0];
+    const MAX_FILE_SIZE = 100 * 1024; // 100KB
+
+  
+    if (file) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error("File size exceeds 100KB. Please upload a smaller image.");
+        return;
+      }
+  
+      const reader = new FileReader();
+  
+      reader.onloadend = () => {
+        const imageUrl = reader.result;
+  
+        setPreviewImages(prev => ({
+          ...prev,
+          [key]: imageUrl
+        }));
+  
+        setFormData(prev => {
+          const updatedData = {
+            ...prev,
+            [`${key}Image`]: imageUrl
+          };
+  
+          localStorage.setItem("formData", JSON.stringify(updatedData));
+          return updatedData;
+        });
+      };
+  
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const showImagePreview = (key) => {
+    const fileUrl = formData[`${key}Image`];
+    if (!fileUrl) {
+      alert("No file uploaded for this field");
+      return;
+    }
+    if(fileUrl.startsWith('data:')){
+    
+    
+    // Create a blob from the data URL
+    const byteString = atob(fileUrl.split(',')[1]);
+    const mimeString = fileUrl.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    
+    const blob = new Blob([ab], { type: mimeString });
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Open in new tab using the blob URL
+    const newWindow = window.open();
+    if (newWindow) {
+      newWindow.document.write(`
+        <html>
+          <head>
+            <title>File Preview</title>
+            <style>
+              body {
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background-color: #f0f0f0;
+              }
+              img, embed, iframe {
+                max-width: 100%;
+                max-height: 90vh;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+              }
+              .container {
+                text-align: center;
+                padding: 20px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+      `);
+      
+      // Different handling based on file type
+      if (mimeString.startsWith('image/')) {
+        newWindow.document.write(`<img src="${blobUrl}" alt="Preview" />`);
+      } else if (mimeString === 'application/pdf') {
+        newWindow.document.write(`<embed src="${blobUrl}" type="application/pdf" width="800px" height="600px" />`);
+      } else if (mimeString.includes('word') || mimeString.includes('excel') || mimeString.includes('powerpoint')) {
+        // For office documents
+        newWindow.document.write(`
+          <div>
+            <h3>Office document preview</h3>
+            <p>This type of document cannot be previewed directly in the browser.</p>
+            <a href="${blobUrl}" download="document">Download File</a>
+          </div>
+        `);
+      } else {
+        // Generic file handling
+        newWindow.document.write(`
+          <div>
+            <h3>File preview</h3>
+            <p>This type of file (${mimeString}) may not display correctly in the browser.</p>
+            <a href="${blobUrl}" download="file">Download File</a>
+          </div>
+        `);
+      }
+      
+      newWindow.document.write(`
+            </div>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
+    } else {
+      alert("Pop-up blocked. Please allow pop-ups for this site to view the file.");
+    }
+  }else{
+    if (!fileUrl) {
+      console.error("No file uploaded for this field");
+      return;
+  }
+
+  window.open(fileUrl, "_blank");
+  }
+    
+  };
   console.log(formData);
-  return (
+    return (
     <div className="p-6  min-h-screen">
       <h3 className="text-xl font-bold text-center" id="head_pdrc">
         2. Professional Development and Research Contribution (PDRC)
@@ -54,19 +190,47 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
               </ol>
             </td>
             <td className="border px-4 py-2">
+            <div className="flex flex-col items-center space-y-2">
               <input
                 type="number"
                 value={formData["PDRC211Self"] || ""}
+                readOnly={isReadOnly}
+
                 onChange={(e) => handleInputChange(e, "PDRC211Self")}
                 min="0"
                 max="10"
                 className="border p-2 w-full"
               />
+              {userRole === "faculty" ? (
+                    <div className="flex flex-col items-center mt-2 w-full">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                        onChange={(e) => handleImageUpload(e, "PDRC211Self")}
+                        className="text-xs w-full"
+                      />
+                        <button
+                        onClick={() => showImagePreview("PDRC211Self")}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                      >
+                        View Evidence
+                      </button>
+                    </div>
+                  
+                  ):<><button
+                  onClick={() => showImagePreview("TLP111Self")}
+                  className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                >
+                  View Evidence
+                </button></>}
+              </div>
             </td>
               <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC211HoD"] || ""}
+                value={userRole === "external" ? "" :formData["PDRC211HoD"] || ""}
+                disabled={userRole === "external"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC211HoD")}
                 min="0"
                 max="10"
@@ -76,7 +240,9 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC211External"] || ""}
+                value={userRole === "hod" ? "" :formData["PDRC211External"] || ""}
+                disabled={userRole === "hod"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC211External")}
                 min="0"
                 max="10"
@@ -95,19 +261,47 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
               </span>
             </td>
             <td className="border px-4 py-2">
+            <div className="flex flex-col items-center space-y-2">
               <input
                 type="number"
                 value={formData["PDRC212Self"] || ""}
+                readOnly={isReadOnly}
+
                 onChange={(e) => handleInputChange(e, "PDRC212Self")}
                 min="0"
                 max="10"
                 className="border p-2 w-full"
               />
+              {userRole === "faculty" ? (
+                    <div className="flex flex-col items-center mt-2 w-full">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                        onChange={(e) => handleImageUpload(e, "PDRC212Self")}
+                        className="text-xs w-full"
+                      />
+                        <button
+                        onClick={() => showImagePreview("PDRC212Self")}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                      >
+                        View Evidence
+                      </button>
+                    </div>
+                  
+                  ):<><button
+                  onClick={() => showImagePreview("TLP111Self")}
+                  className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                >
+                  View Evidence
+                </button></>}
+              </div>
             </td>
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC212HoD"] || ""}
+                value={userRole === "external" ? "" :formData["PDRC212HoD"] || ""}
+                disabled={userRole === "external"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC212HoD")}
                 min="0"
                 max="10"
@@ -117,7 +311,9 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC212External"] || ""}
+                value={userRole === "hod" ? "" :formData["PDRC212External"] || ""}
+                disabled={userRole === "hod"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC212External")}
                 min="0"
                 max="10"
@@ -137,19 +333,47 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
               </span>
             </td>
             <td className="border px-4 py-2">
+            <div className="flex flex-col items-center space-y-2">
               <input
                 type="number"
                 value={formData["PDRC213Self"] || ""}
+                readOnly={isReadOnly}
+
                 onChange={(e) => handleInputChange(e, "PDRC213Self")}
                 min="0"
                 max="10"
                 className="border p-2 w-full"
               />
+              {userRole === "faculty" ? (
+                    <div className="flex flex-col items-center mt-2 w-full">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                        onChange={(e) => handleImageUpload(e, "PDRC213Self")}
+                        className="text-xs w-full"
+                      />
+                        <button
+                        onClick={() => showImagePreview("PDRC213Self")}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                      >
+                        View Evidence
+                      </button>
+                    </div>
+                  
+                  ):<><button
+                  onClick={() => showImagePreview("TLP111Self")}
+                  className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                >
+                  View Evidence
+                </button></>}
+              </div>
             </td>
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC213HoD"] || ""}
+                value={userRole === "external" ? "" :formData["PDRC213HoD"] || ""}
+                disabled={userRole === "external"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC213HoD")}
                 min="0"
                 max="10"
@@ -159,7 +383,9 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC213External"] || ""}
+                value={userRole === "hod" ? "" :formData["PDRC213External"] || ""}
+                disabled={userRole === "hod"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC213External")}
                 min="0"
                 max="10"
@@ -183,19 +409,47 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
               </span>
             </td>
             <td className="border px-4 py-2">
+            <div className="flex flex-col items-center space-y-2">
               <input
                 type="number"
                 value={formData["PDRC214Self"] || ""}
+                readOnly={isReadOnly}
+
                 onChange={(e) => handleInputChange(e, "PDRC214Self")}
                 min="0"
                 max="10"
                 className="border p-2 w-full"
               />
+              {userRole === "faculty" ? (
+                    <div className="flex flex-col items-center mt-2 w-full">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                        onChange={(e) => handleImageUpload(e, "PDRC214Self")}
+                        className="text-xs w-full"
+                      />
+                        <button
+                        onClick={() => showImagePreview("PDRC214Self")}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                      >
+                        View Evidence
+                      </button>
+                    </div>
+                  
+                  ):<><button
+                  onClick={() => showImagePreview("TLP111Self")}
+                  className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                >
+                  View Evidence
+                </button></>}
+              </div>
             </td>
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC214HoD"] || ""}
+                value={userRole === "external" ? "" :formData["PDRC214HoD"] || ""}
+                disabled={userRole === "external"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC214HoD")}
                 min="0"
                 max="10"
@@ -205,7 +459,9 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC214External"] || ""}
+                value={userRole === "hod" ? "" :formData["PDRC214External"] || ""}
+                disabled={userRole === "hod"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC214External")}
                 min="0"
                 max="10"
@@ -253,19 +509,47 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
               UGC care list – 2<br />
             </td> */}
             <td className="border px-4 py-2">
+            <div className="flex flex-col items-center space-y-2">
               <input
                 type="number"
                 value={formData["PDRC221Self"] || ""}
+                readOnly={isReadOnly}
+
                 onChange={(e) => handleInputChange(e, "PDRC221Self")}
                 min="0"
                 max="10"
                 className="border p-2 w-full"
               />
+              {userRole === "faculty" ? (
+                    <div className="flex flex-col items-center mt-2 w-full">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                        onChange={(e) => handleImageUpload(e, "PDRC221Self")}
+                        className="text-xs w-full"
+                      />
+                         <button
+                         onClick={() => showImagePreview("PDRC221Self")}
+                         className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                       >
+                         View Evidence
+                       </button>
+                    </div>
+                  
+                  ):<><button
+                  onClick={() => showImagePreview("TLP111Self")}
+                  className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                >
+                  View Evidence
+                </button></>}
+              </div>
             </td>
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC221HoD"] || ""}
+                value={userRole === "external" ? "" :formData["PDRC221HoD"] || ""}
+                disabled={userRole === "external"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC221HoD")}
                 min="0"
                 max="10"
@@ -275,7 +559,9 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC221External"] || ""}
+                value={userRole === "hod" ? "" :formData["PDRC221External"] || ""}
+                disabled={userRole === "hod"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC221External")}
                 min="0"
                 max="10"
@@ -300,19 +586,47 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
               </ol>
             </td>
             <td className="border px-4 py-2">
+            <div className="flex flex-col items-center space-y-2">
               <input
                 type="number"
                 value={formData["PDRC222Self"] || ""}
+                readOnly={isReadOnly}
+
                 onChange={(e) => handleInputChange(e, "PDRC222Self")}
                 min="0"
                 max="10"
                 className="border p-2 w-full"
               />
+              {userRole === "faculty" ? (
+                    <div className="flex flex-col items-center mt-2 w-full">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                        onChange={(e) => handleImageUpload(e, "PDRC222Self")}
+                        className="text-xs w-full"
+                      />
+                        <button
+                        onClick={() => showImagePreview("PDRC222Self")}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                      >
+                        View Evidence
+                      </button>
+                    </div>
+                 
+                  ):<><button
+                  onClick={() => showImagePreview("TLP111Self")}
+                  className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-1"
+                >
+                  View Evidence
+                </button></>}
+              </div>
             </td>
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC222HoD"] || ""}
+                value={userRole === "external" ? "" :formData["PDRC222HoD"] || ""}
+                disabled={userRole === "external"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC222HoD")}
                 min="0"
                 max="10"
@@ -322,7 +636,9 @@ const Page4 = ({formData, setFormData, onNext, onPrevious }) => {
             <td className="border px-4 py-2">
               <input
                 type="number"
-                value={formData["PDRC222External"] || ""}
+                value={userRole === "hod" ? "" :formData["PDRC222External"] || ""}
+                disabled={userRole === "hod"}
+                readOnly={userRole==="faculty"}
                 onChange={(e) => handleInputChange(e, "PDRC222External")}
                 min="0"
                 max="10"
