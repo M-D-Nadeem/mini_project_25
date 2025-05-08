@@ -80,11 +80,11 @@ const Page7 = ({formData,setFormData,onPrevious,isReadOnly,userRole}) => {
       console.log(response);
       if (response?.data?.success) {
         alert("Form submitted successfully!");
-        localStorage.removeItem("token");
-        localStorage.removeItem("authState");
-        localStorage.clear();
+        // localStorage.removeItem("token");
+        localStorage.removeItem("formData");
+        // localStorage.clear();
         
-        delete axiosInstance.defaults.headers.common["Authorization"];
+        // delete axiosInstance.defaults.headers.common["Authorization"];
         navigate("/tankyouPage")
       } else {
         alert("Form submission failed. Please try again.");
