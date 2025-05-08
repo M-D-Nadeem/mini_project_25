@@ -80,7 +80,7 @@ const Page7 = ({formData,setFormData,onPrevious,isReadOnly,userRole}) => {
       console.log(response);
       if (response?.data?.success) {
         alert("Form submitted successfully!");
-        // localStorage.removeItem("token");
+        localStorage.removeItem("selectedEmployeeCode");
         localStorage.removeItem("formData");
         // localStorage.clear();
         
