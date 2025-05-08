@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import axiosInstance from '../helper/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
-const Page7 = ({formData,setFormData,onPrevious}) => {
+const Page7 = ({formData,setFormData,onPrevious,isReadOnly,userRole}) => {
   const navigate=useNavigate()
   const handleInputChange = (e) => {
     const {name, value } = e.target;
-
+    
     setFormData((prev) => {
       const updatedData = {
         ...prev,
@@ -147,7 +147,9 @@ const Page7 = ({formData,setFormData,onPrevious}) => {
         <label className="block text-lg font-semibold">Remarks by HoD:</label>
         <textarea
           name="RemarksHoD"
-          value={formData["RemarksHoD"] || ""}
+          value={userRole==="hod" || userRole==="faculty" ?formData["RemarksHoD"] || "" : ""}
+          readOnly={userRole==="faculty"}
+          disabled={userRole === "external" ||  userRole=="principle"}
           onChange={(e) => handleInputChange(e)}
           className="w-full p-2 mt-2 border border-gray-300 rounded-md"
         />
@@ -155,7 +157,9 @@ const Page7 = ({formData,setFormData,onPrevious}) => {
         <label className="block text-lg font-semibold mt-4">Remarks by External Auditor:</label>
         <textarea
           name="RemarksExternal"
-          value={formData["RemarksExternal"] || ""}
+          value={userRole==="external" || userRole==="faculty"  ? formData["RemarksExternal"] || "":""}
+          readOnly={userRole==="faculty"}
+          disabled={userRole === "hod" ||  userRole=="principle"}
           onChange={(e) => handleInputChange(e)}
           className="w-full p-2 mt-2 border border-gray-300 rounded-md"
         />
@@ -163,7 +167,9 @@ const Page7 = ({formData,setFormData,onPrevious}) => {
         <label className="block text-lg font-semibold mt-4">Remarks by Principal:</label>
         <textarea
           name="RemarksPrincipal"
-          value={formData["RemarksPrincipal"] || ""}
+          value={userRole==="principle" || userRole==="faculty"  ? formData["RemarksPrincipal"] || "" :""}
+          readOnly={userRole==="faculty"}
+          disabled={userRole === "hod" || userRole=="external"}
           onChange={(e) => handleInputChange(e)}
           className="w-full p-2 mt-2 border border-gray-300 rounded-md"
         />

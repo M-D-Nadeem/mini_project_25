@@ -136,7 +136,7 @@ const App = () => {
       {currentPage === 4 && <Page5 formData={formData} setFormData={setFormData} onNext={handleNext} onPrevious={handlePrevious} isReadOnly={isReadOnly} userRole={userRole}/>}
       {currentPage === 5 && <Page6 formData={formData} setFormData={setFormData} onNext={handleNext} onPrevious={handlePrevious} isReadOnly={isReadOnly} userRole={userRole}/>}
       {currentPage === 6 && <Page2 formData={formData} setFormData={setFormData} onNext={handleNext} onPrevious={handlePrevious} isReadOnly={isReadOnly} userRole={userRole}/>}
-      {currentPage === 7 && <Page7 formData={formData} setFormData={setFormData} onPrevious={handlePrevious} isReadOnly={isReadOnly} />}
+      {currentPage === 7 && <Page7 formData={formData} setFormData={setFormData} onPrevious={handlePrevious} isReadOnly={isReadOnly} userRole={userRole} />}
     </div>
   );
 };

@@ -6,7 +6,10 @@ const Page5 = ({formData, setFormData, onNext, onPrevious,isReadOnly,userRole })
     
     const handleInputChange = (e, key) => {
         const { value } = e.target;
-    
+        if(value<0 || value>10){
+          toast.error("Value should be between range of 0-10");
+          return
+        }
         setFormData((prev) => {
           const updatedData = {
             ...prev,
