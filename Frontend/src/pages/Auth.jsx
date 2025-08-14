@@ -192,6 +192,7 @@ const Auth = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="faculty">Faculty</option>
+                      <option value="principal">Principal</option>
                       <option value="hod">HOD</option>
                       <option value="external">External evaluator</option>
                       <option value="admin">Admin</option>

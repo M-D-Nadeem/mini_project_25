@@ -4,9 +4,9 @@ import cloudinary from "cloudinary"
 connection()
 
 cloudinary.config({
-    cloud_name: "dgckd4upi",
-    api_key: "434615145335372",
-    api_secret: "oJLGGh7zVqpz-2aq87dIHlkeYiE"
+    cloud_name: "dvptqwfj4",
+    api_key: "847684179233349",
+    api_secret: "rwk-b3jRoFY8lwsBEgaFXIi69nw"
   });
 
 app.listen(process.env.PORT,()=>{
